@@ -34,7 +34,7 @@ async function retrieveContext(queryText) {
   // Supabase에 생성해 둔 match_documents 함수 호출
   const { data: documents, error } = await supabase.rpc("match_documents", {
     query_embedding: queryEmbedding,
-    match_threshold: 0.6, // 유사도 매칭 기준 (필요에 따라 조절)
+    match_threshold: 0.3, // 유사도 매칭 기준 (필요에 따라 조절)
     match_count: 3, // 상위 몇 개의 문서를 가져올지 설정
   });
 
