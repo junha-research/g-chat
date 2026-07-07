@@ -34,8 +34,8 @@ async function retrieveContext(queryText) {
   // Supabase에 생성해 둔 match_documents 함수 호출
   const { data: documents, error } = await supabase.rpc('match_documents', {
     query_embedding: queryEmbedding,
-    match_threshold: 0.6, // 유사도 매칭 기준 (필요에 따라 조절)
-    match_count: 3,       // 상위 몇 개의 문서를 가져올지 설정
+    match_threshold: 0.3, // 유사도 매칭 기준 (text-embedding-3-small 한국어는 0.3~0.55 범위)
+    match_count: 5,       // 상위 몇 개의 문서를 가져올지 설정
   });
 
   if (error) {
@@ -53,7 +53,26 @@ async function runRagPipeline(userQuestion) {
   try {
     // 컨텍스트 조회
     const retrievedDocs = await retrieveContext(userQuestion);
-    
+
+    // 참고한 맥락(RAG Context)을 터미널에 표시
+    console.log('\n=== 참고한 맥락 (RAG Context) ===');
+    console.log(`질문: ${userQuestion}`);
+    console.log(`검색된 문서 수: ${retrievedDocs.length}\n`);
+    if (retrievedDocs.length === 0) {
+      console.log('(매칭된 문서가 없습니다)');
+    } else {
+      retrievedDocs.forEach((doc, i) => {
+        const similarity =
+          doc.similarity !== undefined
+            ? ` (유사도: ${doc.similarity.toFixed(4)})`
+            : '';
+        console.log(`[${i + 1}]${similarity}`);
+        console.log(doc.content);
+        console.log('');
+      });
+    }
+    console.log('================================\n');
+
     // 가져온 문서들을 하나의 컨텍스트 문자열로 병합
     const contextText = retrievedDocs
       .map((doc) => `- 문맥: ${doc.content}`)
@@ -85,7 +104,7 @@ ${contextText}`;
 }
 
 // 실행 예시
-const question = "수파베이스와 오픈AI를 연동할 때 주의할 점이 뭐야?";
+const question = "한림대학교 대학원 논문 심사 과정에 대해 알려줘";
 runRagPipeline(question).then((answer) => {
   console.log('\n=== 대답 ===\n', answer);
 });
