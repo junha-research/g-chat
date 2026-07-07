@@ -10,6 +10,8 @@ Node.js 환경에서 **Supabase**와 **OpenAI**를 연동하여 구현한 RAG(Re
 * **[rag_pipeline.js](file:///C:/Users/nlp/Documents/g-chat/rag_pipeline.js)**: 
   * 사용자 질문의 임베딩을 생성하고 Supabase에서 유사도가 높은 관련 문서를 검색합니다.
   * 검색된 컨텍스트를 기반으로 OpenAI GPT 모델을 통해 답변을 생성하는 RAG의 핵심 파이프라인 소스코드입니다.
+* **[ingest.js](file:///C:/Users/nlp/Documents/g-chat/ingest.js)**: 
+  * `knowledge.txt` 파일의 원본 텍스트를 읽어 청크(Chunk)로 나눈 뒤, OpenAI 임베딩 API를 사용해 벡터화하여 Supabase 데이터베이스에 적재하는 스크립트입니다.
 * **[test_connect.js](file:///C:/Users/nlp/Documents/g-chat/test_connect.js)**: 
   * Supabase 데이터베이스와의 연결을 확인하고 `documents` 테이블에 더미 데이터 및 1536차원의 임베딩 데이터를 성공적으로 삽입하는지 테스트하는 스크립트입니다.
 * **[package.json](file:///C:/Users/nlp/Documents/g-chat/package.json)**:
@@ -27,6 +29,7 @@ Node.js 환경에서 **Supabase**와 **OpenAI**를 연동하여 구현한 RAG(Re
 1. **`documents` 테이블**:
    * `content`: `text` (문서의 실제 내용)
    * `embedding`: `vector(1536)` (임베딩 벡터 데이터, `pgvector` 확장 활성화 필요)
+   * `metadata`: `jsonb` (소스 파일 정보, 인덱스 등을 저장하기 위한 메타데이터 컬럼, 선택사항)
 
 2. **`match_documents` RPC 함수**:
    * 사용자 질문의 임베딩과 가장 유사한 상위 매칭 문서를 찾아 반환하는 PostgreSQL 함수입니다.
@@ -46,9 +49,10 @@ npm install
 ```env
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 OPENAI_API_KEY=your_openai_api_key
 ```
-> **주의**: `.env` 파일은 민감한 인증 정보를 포함하고 있으므로 절대로 Git 저장소에 커밋하거나 공유하지 마십시오. (`.gitignore`에 의해 자동 제외됩니다.)
+> **주의**: `.env` 파일은 민감한 인증 정보를 포함하고 있으므로 절대로 Git 저장소에 커밋하거나 공유하지 마십시오. (`.gitignore`에 의해 자동 제외됩니다.) 특히 `SUPABASE_SERVICE_ROLE_KEY`는 RLS(행 수준 보안)를 우회하여 데이터를 삽입하는 강력한 권한을 가지므로 유출에 주의해야 합니다.
 
 ### 3. 기능 실행
 
@@ -56,6 +60,13 @@ OPENAI_API_KEY=your_openai_api_key
   ```bash
   node test_connect.js
   ```
+
+* **데이터베이스 지식 정보 적재 (Ingest)**:
+  1. 루트 경로에 지식 데이터가 들어있는 `knowledge.txt` 파일을 생성하고 텍스트를 작성합니다.
+  2. 다음 명령어를 실행하여 텍스트를 청크로 나누고 임베딩 처리하여 Supabase에 적재합니다.
+     ```bash
+     node ingest.js
+     ```
 
 * **RAG 파이프라인 질의 테스트 실행**:
   ```bash
