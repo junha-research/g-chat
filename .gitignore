@@ -33,3 +33,4 @@ Thumbs.db
 # Supabase local development
 supabase/.temp/
 supabase/.branches/
+.claude/
